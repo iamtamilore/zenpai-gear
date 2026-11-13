@@ -1,0 +1,22 @@
+(function(){
+'use strict';
+var site=document.documentElement.dataset.site||'hub';
+var root='whybit-gear:saved-list';
+try{root=site+':saved-list'}catch(e){}
+var cards=[].slice.call(document.querySelectorAll('.episode-card'));
+var list=document.querySelector('.episode-list'), search=document.querySelector('input[type=search]'), select=document.querySelector('.category-field select'), empty=document.querySelector('.empty-state');
+var saved=[]; try{saved=JSON.parse(localStorage.getItem(root)||'[]')}catch(e){saved=[]}
+function persist(){try{localStorage.setItem(root,JSON.stringify(saved))}catch(e){}}
+function renderSaved(){var box=document.querySelector('.saved-items'),counter=document.querySelector('.saved-count'),msg=document.querySelector('.saved-empty');box.innerHTML='';counter.textContent=String(saved.length);msg.hidden=saved.length!==0;saved.forEach(function(id){var card=document.getElementById(id);var div=document.createElement('div');div.className='saved-item';div.innerHTML='<button type="button" aria-label="Remove saved record">×</button><strong>'+(card?'card.querySelector("h3").textContent':id)+'</strong>';div.querySelector('button').onclick=function(){saved=saved.filter(function(x){return x!==id});persist();renderSaved()};box.appendChild(div)})}
+function apply(){var q=(search.value||'').toLowerCase().trim(),cat=select.value,shown=0;cards.forEach(function(c){var okq=!q||c.dataset.search.indexOf(q)>-1,okc=cat==='all'||c.dataset.category===cat;c.hidden=!(okq&&okc);if(!c.hidden)shown++});empty.hidden=shown!==0}
+function filter(cat){select.value=cat;[].forEach.call(document.querySelectorAll('.filter-rail button'),function(b){b.classList.toggle('active',b.dataset.filter===cat)})}
+search.addEventListener('input',apply);select.addEventListener('change',apply);
+[].forEach.call(document.querySelectorAll('.filter-rail button'),function(b){b.addEventListener('click',function(){filter(b.dataset.filter);apply()})});
+[].forEach.call(document.querySelectorAll('.dossier-trigger'),function(b){b.addEventListener('click',function(){var d=document.getElementById(b.getAttribute('aria-controls'));var open=b.getAttribute('aria-expanded')==='true';d.hidden=open;b.setAttribute('aria-expanded',String(!open));if(!open){var id=b.closest('.episode-card').id;if(saved.indexOf(id)<0){saved.push(id);persist();renderSaved()}}})});
+cards.forEach(function(c){c.addEventListener('dblclick',function(){var id=c.id;if(saved.indexOf(id)<0){saved.push(id);persist();renderSaved()}})});
+function region(){var lang=(navigator.language||'').toLowerCase();var tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';var uk=lang.indexOf('en-gb')===0||lang.indexOf('en-ie')===0||tz==='Europe/Dublin'||tz==='Europe/London';return uk?'uk':'us'}
+function setRegion(r,persistChoice){document.documentElement.dataset.region=r;[].forEach.call(document.querySelectorAll('[data-set-region]'),function(b){b.classList.toggle('active',b.dataset.setRegion===r)});[].forEach.call(document.querySelectorAll('.store-link'),function(a){a.classList.toggle('active',a.dataset.region===r)});if(persistChoice){try{localStorage.setItem(site+':region',r)}catch(e){}}}
+[].forEach.call(document.querySelectorAll('[data-set-region]'),function(b){b.addEventListener('click',function(){setRegion(b.dataset.setRegion,true)})});var stored;try{stored=localStorage.getItem(site+':region')}catch(e){}setRegion(stored||region(),false);
+var drawer=document.querySelector('.saved-drawer'),scrim=document.querySelector('.drawer-scrim'),trigger=document.querySelector('.saved-trigger');function openDrawer(){drawer.hidden=false;scrim.hidden=false;trigger.setAttribute('aria-expanded','true');drawer.querySelector('button').focus()}function closeDrawer(){drawer.hidden=true;scrim.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus()}trigger.addEventListener('click',openDrawer);scrim.addEventListener('click',closeDrawer);document.querySelector('[data-close-drawer]').addEventListener('click',closeDrawer);
+function deepLink(){var p=new URLSearchParams(location.search);var id=(p.get('ep')||location.hash||'').replace(/^#/,'');if(!id)return;var card=document.getElementById(id);if(!card)return;card.hidden=false;var b=card.querySelector('.dossier-trigger');if(b){b.setAttribute('aria-expanded','true');document.getElementById(b.getAttribute('aria-controls')).hidden=false}card.classList.add('is-highlight');card.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'})}deepLink();renderSaved();
+})();
